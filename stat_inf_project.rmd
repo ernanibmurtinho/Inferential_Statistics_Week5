@@ -1,0 +1,251 @@
+---
+title: "Statistical inference with the GSS data"
+author: "Ernâni de Britto Murtinho (ernanibmurtinho@gmail.com)"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+```
+
+### Load data
+
+
+```{r load-data}
+load("gss.Rdata")
+
+#renaming for convenience
+
+df <- gss
+
+```
+
+
+### Cleaning and visualizing the Data
+
+```{r clean-data}
+
+df_gss <- select(df, caseid, degree, educ, natfare, age, income06, coneduc, conmedic, coninc) %>%
+   filter(degree != "NA") %>% filter(educ != "NA") %>% filter(natfare != "NA") %>% filter(age != "NA") %>% filter(income06 != "NA") %>% filter(coneduc != "NA") %>% filter(conmedic != "NA") %>% filter(coninc != "NA")
+
+head(df_gss, 20)
+
+```
+
+#Variables used
+caseid -> case identification number
+degree -> RS highest degree
+natfare -> welfare
+age -> age
+income06 -> total family income
+coneduc -> education confidence
+conmedic -> medicine confidence
+coninc -> FAMILY INCOME IN CONSTANT DOLLARS
+
+#Variables explanation
+
+#CASEID
+
+##CASE IDENTIFICATION NUMBER
+
+#DEGREE
+
+##RS HIGHEST DEGREE
+
+If finished 9th-12th grade: Did you ever get a high school diploma or a GED certificate?
+
+#INCOME06
+
+##TOTAL FAMILY INCOME
+
+In which of these groups did your total family income, from all sources, fall last year before taxes, that is.
+
+#CONEDUC
+
+##CONFIDENCE IN EDUCATION
+
+I am going to name some institutions in this country. As far as the people running these institutions are concerned, would you say you have a great deal of confidence, only some confidence, or hardly any confidence at all in them? d. Education.
+
+#CONMEDIC
+
+##CONFIDENCE IN MEDICINE
+
+I am going to name some institutions in this country. As far as the people running these institutions are concerned, would you say you have a great deal of confidence, only some confidence, or hardly any confidence at all in them? h. Medicine.
+
+
+## Part 1: Data
+
+###Introduction
+
+The General Social Survey (GSS) is a sociological survey created and regularly collected since 1972 by the research institute [NORC](http://www.norc.org/Research/Projects/Pages/general-social-survey.aspx) at the University of Chicago. It is funded by the National Science Foundation. The GSS collects information and keep a historical record of the concerns, experiences, attitudes, and practices of residents of the United States.
+
+###Data Usage
+
+The propose of this project, is to use the data with educational purposes and others, related to trends, changes, behavioral comportaments, functioning overview of society as well as the role of various sub-groups. A comparative between United States and other societies to place American society in comparative perspective and develop cross-national models of human society. Make a up-to-date dataset, with high-quality and acessible to scholars, students, policy makers and others, with low cost.
+
+
+###Generalizability
+
+This Data(the GSS Survey) is targeted to adults (18+) (residents in U.S.) living in households. Respondents that become part of the GSS sample are from a mix of urban, suburban, and rural geographic areas. The participation in this study is strictly voluntary and the survey is conducted by a face-to-face interview.
+
+###Causality
+
+This data is experimental and, otherwise, doesn't provide none causal conclusions.
+
+***
+
+## Part 2: Research question
+
+***
+
+Is there a correlation between better health conditions/requirements and high school degree(a higher education level)? 
+
+Here, I will take an overview of the topics "family income level" and "education"(two of the principals, for a society, in my opinion) because a higher family income, could reflect in better life conditions(I know that correlation doesn't imply causation) but it's one of the starting points.
+
+If the people in a country, have better income and education conditions, that may provide a better access to hospitals, greater realizations of dreams and desires in a society and stimulates their growth as a whole, leading everyone together to walk the same path.
+
+Well, lets see how it reflects in a society with a litle example:
+
+***
+
+## Part 3: Exploratory data analysis
+
+```{r - Exploratory Data Analysis}
+
+str(df_gss)
+dim(df_gss)
+
+# Preparing the Data
+
+#Division between graduation levels, low when the person doesn't have a regular bachelor and high when the person has a bachelor or a higher level, a master degree or beyond that.
+
+high_grad_val <- c("Bachelor", "Graduate")
+
+high_grad <- subset(df_gss, df_gss$degree %in% high_grad_val)
+low_grad <- subset(df_gss, !(df_gss$degree %in% high_grad_val))
+
+#Agregating the income level by degree
+
+high_grad_graph <- high_grad %>%
+  group_by(income06) %>%
+  summarise(frequency = n()) %>%
+  mutate(percentage = frequency / sum(frequency))
+  
+low_grad_graph <- low_grad %>%
+  group_by(income06) %>%
+  summarise(frequency = n()) %>%
+  mutate(percentage = frequency / sum(frequency))
+
+#Agregating by high and low degree, as above.
+
+gss_degree_group <- df_gss %>% group_by(degree) %>% summarise (n = n()) %>% mutate(percentage = n / sum(n))
+
+#Agregating by degree and natfare, for try to see a correlation between both.
+
+gss_degree_natfare <- df_gss %>% group_by(degree, natfare) %>% summarise (n = n()) %>% mutate(percentage = n / sum(n)) %>% arrange(natfare)
+
+ggplot(gss_degree_group, aes(x=degree, y = percentage)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+  labs(x="Income", y="Percentage") +
+  ggtitle("Income divided by graduate level")
+
+ggplot(gss_degree_natfare, aes(x=natfare, y = percentage)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+  labs(x="Income", y="Percentage") +
+  ggtitle("Income divided by graduate level")
+
+
+ggplot(high_grad_graph, aes(x=income06, y = percentage)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+  labs(x="Income", y="Percentage") +
+  ggtitle("Income divided by graduate level")
+
+
+ggplot(low_grad_graph, aes(x=income06, y = percentage)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+  labs(x="Income", y="Percentage") +
+  ggtitle("Income divided by graduate level")
+
+
+#Preparing Data - changing factor to numeric, for use to correlation
+
+df_gss <- df_gss %>%
+  mutate(coneducCor = ifelse(coneduc == 'Only Some', 1,
+                    ifelse(coneduc == 'A Great Deal', 2, 3 ))) %>%
+  mutate(conmedicCor = ifelse(conmedic == 'Only Some', 1,
+                    ifelse(conmedic == 'A Great Deal', 2, 3)))
+
+#Here, we will take a look if confidence education and confidence in medical services, has an important correlation
+
+cor(df_gss$coneducCor, df_gss$conmedicCor)
+
+#Correlation apointed here, is not a high value and have a little but estimated correlation
+
+by(df_gss$conmedic, df_gss$coneduc, summary)
+
+#Now, we can conclude that, even though there is a pretty association between degree level and welfare, sometimes they have a connection.
+
+#
+
+```
+
+
+* * *
+
+## Part 4: Inference
+
+```{r - Inference}
+
+#Here we hope we can investigate if there is a relationship between family income level, education and welfare, as we have seen before.
+
+#And, at this end, we will test the null hypothesis H0 that the high graduate have better life conditions and alternative Hypothesis that low graduate have worst life conditions.
+
+#For comparison proposes, we wiil look at the mean, of these hypothesis
+
+df_gss %>%
+  group_by(degree) %>%
+  summarise(mean_degree = mean(n()))
+
+df_gss %>%
+  group_by(natfare) %>%
+  summarise(mean_natfare = mean(n()))
+
+
+#Lets visualize the data, for inference information, making an analysis between degree and natfare by coninc(family income in dollars).
+
+ggplot(data=df_gss,aes(x=degree,y=coninc)) + geom_boxplot(aes(fill=natfare))
+
+#The plot show us that we have a proportionally growth between this comparisons, but sometimes the plot may not show everything we need to know. Even though the plot is growing proportionally, it's not the only truth.
+
+#Lets take a look at anova analysis:
+
+anova(lm(coninc ~ degree, data = df_gss))
+
+anova(lm(coninc ~ natfare, data = df_gss))
+
+#Lets perform the pairwise t-tests with the Bonferonni correction.
+
+pairwise.t.test(df_gss$coninc, df_gss$degree, p.adj="bonferroni")
+
+pairwise.t.test(df_gss$coninc, df_gss$natfare, p.adj="bonferroni")
+
+
+```
+
+Conclusion
+
+Our P-value is close to zero, in these two cases, that indicates to us, that we have a strong evidence that income and education levels, together, these shows that if you have a better education, this may infer in a better life conditions expected, which is not always the truth, but we have a strongest evidence that it can makes everything better in a nation.
